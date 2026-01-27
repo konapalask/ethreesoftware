@@ -219,136 +219,152 @@ export default function POS() {
             setShowSuccessModal(true);
             setCart([]); // Clear cart here after successful print flow
         }, 100);
-    };
+        const handleReprint = async () => {
+            if (!printData) return;
 
-    const closeSuccessModal = () => {
-        setShowSuccessModal(false);
-    };
+            // Security Feature: Generate NEW Ticket ID for reprints to prevent scams/reuse
+            // This forces the cashier to account for every printed slip as a new transaction in the system.
+            const newTicketId = `TXN-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 1000)}`;
+            const date = new Date().toLocaleString();
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/login');
-    };
+            const newTicketData = {
+                ...printData,
+                id: newTicketId,
+                date: date,
+                createdAt: new Date().toISOString()
+            };
 
-    return (
-        <div className="min-h-screen bg-slate-100 font-sans text-slate-900">
-            {/* Screen Layout */}
-            <div className="print:hidden flex flex-col h-screen">
-                <header className="bg-blue-900 text-amber-400 p-4 shadow-md z-10">
-                    <div className="container mx-auto flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="relative">
-                                <img
-                                    src="/e3logo.jpeg"
-                                    alt="Ethree Logo"
-                                    className="relative w-12 h-12 rounded-lg object-contain bg-white"
-                                />
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-extrabold tracking-tight text-white leading-tight">ETHREE POS</h1>
-                            </div>
+            // Handle SubTickets regeneration if needed
+            let newSubTickets: any[] = [];
+            if (printData.subTickets && printData.subTickets.length > 0) {
+                newSubTickets = printData.subTickets.map((t, index) => ({
+                    ...t,
+                    id: `${newTicketId}-C${index + 1}`,
+                    parentId: newTicketId,
+                    date: date,
+                    createdAt: new Date().toISOString()
+                }));
+            }
 
-                            {/* Offline Indicator */}
-                            <div className="ml-4 flex items-center gap-2">
-                                {isOnline ? (
-                                    <div className="px-2 py-1 bg-emerald-500/20 text-emerald-300 text-xs rounded-full flex items-center gap-1 border border-emerald-500/30">
-                                        <Wifi size={14} />
-                                        <span>Online</span>
-                                    </div>
-                                ) : (
-                                    <div className="px-2 py-1 bg-red-500/20 text-red-300 text-xs rounded-full flex items-center gap-1 border border-red-500/30 animate-pulse">
-                                        <WifiOff size={14} />
-                                        <span>Offline</span>
-                                    </div>
-                                )}
+            const ticketsToSave = [newTicketData, ...newSubTickets];
 
-                                {pendingCount > 0 && (
-                                    <div className="px-2 py-1 bg-amber-500/20 text-amber-300 text-xs rounded-full flex items-center gap-1 border border-amber-500/30">
-                                        <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} />
-                                        <span>{pendingCount} Pending</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+            // Update UI State for Printing
+            setPrintData({
+                items: printData.items,
+                total: printData.total,
+                date: date,
+                id: newTicketId,
+                mobile: printData.mobile,
+                subTickets: newSubTickets,
+                skipMaster: printData.skipMaster
+            });
 
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={() => navigate('/verify')}
-                                className="flex items-center gap-2 bg-blue-800 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition-colors border border-blue-700"
-                            >
-                                <ScanLine size={18} />
-                                <span>Verify Tickets</span>
-                            </button>
-                            <div className="h-8 w-px bg-slate-800 mx-1"></div>
-                            <button
-                                onClick={handleLogout}
-                                className="group flex items-center gap-2 text-slate-400 hover:text-rose-400 transition-colors px-2 py-1"
-                                title="Logout"
-                            >
-                                <LogOut size={20} className="group-hover:-translate-x-0.5 transition-transform" />
-                            </button>
-                        </div>
-                    </div>
-                </header>
+            // Save New Transaction to Backend
+            try {
+                if (!isOnline) throw new Error('Offline');
+                await Promise.all(ticketsToSave.map(t => axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/tickets`, t)));
+            } catch (error) {
+                console.log('Backend unavailable during reprint, queueing locally.');
+                const pending = JSON.parse(localStorage.getItem('pending_tickets') || '[]');
+                ticketsToSave.forEach(t => pending.push(t));
+                localStorage.setItem('pending_tickets', JSON.stringify(pending));
+                setPendingCount(prev => prev + ticketsToSave.length);
+            }
 
-                <main className="flex-1 overflow-hidden container mx-auto p-4 flex gap-6">
-                    <div className="flex-1 h-full w-full overflow-hidden flex flex-col">
-                        <div className="flex-1 overflow-y-auto pr-2 pb-20 md:pb-0 custom-scrollbar">
-                            <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 flex items-center gap-3 text-blue-950 sticky top-0 bg-slate-100 z-10 py-2">
-                                <span className="w-1.5 h-6 md:h-8 bg-gradient-to-b from-amber-400 to-amber-600 rounded-full shadow-sm"></span>
-                                Available Rides
-                            </h2>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 pb-24 md:pb-0">
-                                {rides.map(ride => (
-                                    <RideCard key={ride.id} ride={ride} onAdd={addToCart} />
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+            // Wait for state update then print
+            setTimeout(() => {
+                window.print();
+            }, 100);
+        };
 
-                    {/* Desktop Cart Sidebar */}
-                    <div className="hidden md:block w-[350px] lg:w-[400px] shrink-0 border-l border-slate-200 pl-4 bg-slate-100">
-                        <Cart
-                            items={cart}
-                            onUpdateQuantity={updateQuantitySimple}
-                            onClear={clearCart}
-                            onPrint={handlePrintClick}
-                        />
-                    </div>
-                </main>
+        const closeSuccessModal = () => {
+            setShowSuccessModal(false);
+        };
 
-                {/* Mobile Cart Floating Button */}
-                <div className="md:hidden fixed bottom-4 left-4 right-4 z-40">
-                    {cart.length > 0 && (
-                        <button
-                            onClick={() => setShowMobileCart(true)}
-                            className="w-full bg-slate-900 text-white rounded-xl p-4 shadow-xl flex items-center justify-between animate-in slide-in-from-bottom-4"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="bg-amber-400 text-slate-900 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
-                                    {cart.reduce((s, i) => s + i.quantity, 0)}
+        const handleLogout = () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            navigate('/login');
+        };
+
+        return (
+            <div className="min-h-screen bg-slate-100 font-sans text-slate-900">
+                {/* Screen Layout */}
+                <div className="print:hidden flex flex-col h-screen">
+                    <header className="bg-blue-900 text-amber-400 p-4 shadow-md z-10">
+                        <div className="container mx-auto flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="relative">
+                                    <img
+                                        src="/e3logo.jpeg"
+                                        alt="Ethree Logo"
+                                        className="relative w-12 h-12 rounded-lg object-contain bg-white"
+                                    />
                                 </div>
-                                <span className="font-bold text-lg">View Cart</span>
-                            </div>
-                            <span className="font-mono text-xl font-black text-amber-400">₹{totalWithTax}</span>
-                        </button>
-                    )}
-                </div>
+                                <div>
+                                    <h1 className="text-xl font-extrabold tracking-tight text-white leading-tight">ETHREE POS</h1>
+                                </div>
 
-                {/* Mobile Cart Modal */}
-                {showMobileCart && (
-                    <div className="md:hidden fixed inset-0 z-50 bg-slate-100 flex flex-col animate-in slide-in-from-bottom duration-200">
-                        <div className="bg-white p-4 flex items-center justify-between shadow-sm border-b border-slate-200">
-                            <h2 className="text-xl font-bold text-slate-900">Your Cart</h2>
-                            <button
-                                onClick={() => setShowMobileCart(false)}
-                                className="bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition-colors"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
-                            </button>
+                                {/* Offline Indicator */}
+                                <div className="ml-4 flex items-center gap-2">
+                                    {isOnline ? (
+                                        <div className="px-2 py-1 bg-emerald-500/20 text-emerald-300 text-xs rounded-full flex items-center gap-1 border border-emerald-500/30">
+                                            <Wifi size={14} />
+                                            <span>Online</span>
+                                        </div>
+                                    ) : (
+                                        <div className="px-2 py-1 bg-red-500/20 text-red-300 text-xs rounded-full flex items-center gap-1 border border-red-500/30 animate-pulse">
+                                            <WifiOff size={14} />
+                                            <span>Offline</span>
+                                        </div>
+                                    )}
+
+                                    {pendingCount > 0 && (
+                                        <div className="px-2 py-1 bg-amber-500/20 text-amber-300 text-xs rounded-full flex items-center gap-1 border border-amber-500/30">
+                                            <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} />
+                                            <span>{pendingCount} Pending</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => navigate('/verify')}
+                                    className="flex items-center gap-2 bg-blue-800 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition-colors border border-blue-700"
+                                >
+                                    <ScanLine size={18} />
+                                    <span>Verify Tickets</span>
+                                </button>
+                                <div className="h-8 w-px bg-slate-800 mx-1"></div>
+                                <button
+                                    onClick={handleLogout}
+                                    className="group flex items-center gap-2 text-slate-400 hover:text-rose-400 transition-colors px-2 py-1"
+                                    title="Logout"
+                                >
+                                    <LogOut size={20} className="group-hover:-translate-x-0.5 transition-transform" />
+                                </button>
+                            </div>
                         </div>
-                        <div className="flex-1 overflow-hidden p-4">
+                    </header>
+
+                    <main className="flex-1 overflow-hidden container mx-auto p-4 flex gap-6">
+                        <div className="flex-1 h-full w-full overflow-hidden flex flex-col">
+                            <div className="flex-1 overflow-y-auto pr-2 pb-20 md:pb-0 custom-scrollbar">
+                                <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 flex items-center gap-3 text-blue-950 sticky top-0 bg-slate-100 z-10 py-2">
+                                    <span className="w-1.5 h-6 md:h-8 bg-gradient-to-b from-amber-400 to-amber-600 rounded-full shadow-sm"></span>
+                                    Available Rides
+                                </h2>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 pb-24 md:pb-0">
+                                    {rides.map(ride => (
+                                        <RideCard key={ride.id} ride={ride} onAdd={addToCart} />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Desktop Cart Sidebar */}
+                        <div className="hidden md:block w-[350px] lg:w-[400px] shrink-0 border-l border-slate-200 pl-4 bg-slate-100">
                             <Cart
                                 items={cart}
                                 onUpdateQuantity={updateQuantitySimple}
@@ -356,104 +372,142 @@ export default function POS() {
                                 onPrint={handlePrintClick}
                             />
                         </div>
+                    </main>
+
+                    {/* Mobile Cart Floating Button */}
+                    <div className="md:hidden fixed bottom-4 left-4 right-4 z-40">
+                        {cart.length > 0 && (
+                            <button
+                                onClick={() => setShowMobileCart(true)}
+                                className="w-full bg-slate-900 text-white rounded-xl p-4 shadow-xl flex items-center justify-between animate-in slide-in-from-bottom-4"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-amber-400 text-slate-900 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
+                                        {cart.reduce((s, i) => s + i.quantity, 0)}
+                                    </div>
+                                    <span className="font-bold text-lg">View Cart</span>
+                                </div>
+                                <span className="font-mono text-xl font-black text-amber-400">₹{totalWithTax}</span>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Mobile Cart Modal */}
+                    {showMobileCart && (
+                        <div className="md:hidden fixed inset-0 z-50 bg-slate-100 flex flex-col animate-in slide-in-from-bottom duration-200">
+                            <div className="bg-white p-4 flex items-center justify-between shadow-sm border-b border-slate-200">
+                                <h2 className="text-xl font-bold text-slate-900">Your Cart</h2>
+                                <button
+                                    onClick={() => setShowMobileCart(false)}
+                                    className="bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                                </button>
+                            </div>
+                            <div className="flex-1 overflow-hidden p-4">
+                                <Cart
+                                    items={cart}
+                                    onUpdateQuantity={updateQuantitySimple}
+                                    onClear={clearCart}
+                                    onPrint={handlePrintClick}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Checkout Modal */}
+                {showCheckoutModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+                            <h2 className="text-xl font-bold text-slate-900 mb-4">Checkout</h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                        Customer Mobile Number <span className="text-slate-400 font-normal">(Optional)</span>
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        placeholder="Enter 10-digit number"
+                                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                        value={mobileNumber}
+                                        onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                    />
+                                </div>
+
+                                <div className="bg-slate-50 p-4 rounded-lg space-y-2">
+                                    <div className="flex justify-between text-sm text-slate-600">
+                                        <span>Total Items</span>
+                                        <span>{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                                    </div>
+                                    <div className="flex justify-between font-bold text-lg text-slate-900 pt-2 border-t border-slate-200">
+                                        <span>Total Amount</span>
+                                        <span>₹{totalWithTax}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        onClick={() => setShowCheckoutModal(false)}
+                                        className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={confirmPrint}
+                                        className="flex-1 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"
+                                    >
+                                        Confirm & Print
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Print Layout - Only visible when printing */}
+                <div className="hidden print:block absolute top-0 left-0 w-full h-full bg-white z-[9999]">
+                    <div className="flex items-center justify-center p-0">
+                        <Ticket
+                            ref={ticketRef}
+                            items={printData?.items || []}
+                            total={printData?.total || 0}
+                            date={printData?.date || ''}
+                            ticketId={printData?.id || ''}
+                            mobileNumber={printData?.mobile || ''}
+                            subTickets={printData?.subTickets}
+                            skipMaster={printData?.skipMaster}
+                        />
+                    </div>
+                </div>
+                {/* Success Modal */}
+                {showSuccessModal && (
+                    <div className="fixed inset-0 bg-black/50/ backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center animate-in fade-in zoom-in duration-300 ring-1 ring-slate-900/5">
+                            <div className="mx-auto bg-emerald-100 p-4 rounded-full w-20 h-20 flex items-center justify-center mb-6 shadow-inner">
+                                <TicketIcon className="w-10 h-10 text-emerald-600" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-slate-900 mb-2">Printing Complete</h2>
+                            <p className="text-slate-500 mb-8 text-lg leading-relaxed">Please collect your tickets from the printer.</p>
+
+                            <div className="space-y-3">
+                                <button
+                                    onClick={closeSuccessModal}
+                                    className="w-full px-4 py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 text-lg active:scale-[0.98]"
+                                >
+                                    Done
+                                </button>
+                                <button
+                                    onClick={handleReprint}
+                                    className="w-full px-4 py-3 bg-white text-slate-700 font-bold rounded-xl border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors text-base flex items-center justify-center gap-2"
+                                >
+                                    <RefreshCw size={18} />
+                                    Reprint Ticket
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
-
-            {/* Checkout Modal */}
-            {showCheckoutModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
-                        <h2 className="text-xl font-bold text-slate-900 mb-4">Checkout</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Customer Mobile Number <span className="text-slate-400 font-normal">(Optional)</span>
-                                </label>
-                                <input
-                                    type="tel"
-                                    placeholder="Enter 10-digit number"
-                                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                                    value={mobileNumber}
-                                    onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                                />
-                            </div>
-
-                            <div className="bg-slate-50 p-4 rounded-lg space-y-2">
-                                <div className="flex justify-between text-sm text-slate-600">
-                                    <span>Total Items</span>
-                                    <span>{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
-                                </div>
-                                <div className="flex justify-between font-bold text-lg text-slate-900 pt-2 border-t border-slate-200">
-                                    <span>Total Amount</span>
-                                    <span>₹{totalWithTax}</span>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    onClick={() => setShowCheckoutModal(false)}
-                                    className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={confirmPrint}
-                                    className="flex-1 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"
-                                >
-                                    Confirm & Print
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Print Layout - Only visible when printing */}
-            <div className="hidden print:block absolute top-0 left-0 w-full h-full bg-white z-[9999]">
-                <div className="flex items-center justify-center p-0">
-                    <Ticket
-                        ref={ticketRef}
-                        items={printData?.items || []}
-                        total={printData?.total || 0}
-                        date={printData?.date || ''}
-                        ticketId={printData?.id || ''}
-                        mobileNumber={printData?.mobile || ''}
-                        subTickets={printData?.subTickets}
-                        skipMaster={printData?.skipMaster}
-                    />
-                </div>
-            </div>
-            {/* Success Modal */}
-            {showSuccessModal && (
-                <div className="fixed inset-0 bg-black/50/ backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center animate-in fade-in zoom-in duration-300 ring-1 ring-slate-900/5">
-                        <div className="mx-auto bg-emerald-100 p-4 rounded-full w-20 h-20 flex items-center justify-center mb-6 shadow-inner">
-                            <TicketIcon className="w-10 h-10 text-emerald-600" />
-                        </div>
-                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Printing Complete</h2>
-                        <p className="text-slate-500 mb-8 text-lg leading-relaxed">Please collect your tickets from the printer.</p>
-
-                        <div className="space-y-3">
-                            <button
-                                onClick={closeSuccessModal}
-                                className="w-full px-4 py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 text-lg active:scale-[0.98]"
-                            >
-                                Done
-                            </button>
-                            <button
-                                onClick={() => {
-                                    window.print();
-                                }}
-                                className="w-full px-4 py-3 bg-white text-slate-700 font-bold rounded-xl border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors text-base flex items-center justify-center gap-2"
-                            >
-                                <RefreshCw size={18} />
-                                Reprint Ticket
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
+        );
+    }
