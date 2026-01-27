@@ -307,9 +307,12 @@ export default function POS() {
         const date = new Date().toLocaleString();
 
         const newTicketData = {
-            ...printData,
             id: newTicketId,
+            amount: printData.total, // Fix: backend expects 'amount', printData has 'total'
             date: date,
+            items: printData.items,
+            mobile: printData.mobile,
+            status: 'valid',
             createdAt: new Date().toISOString()
         };
 
@@ -329,13 +332,10 @@ export default function POS() {
 
         // Update UI State for Printing
         setPrintData({
-            items: printData.items,
-            total: printData.total,
+            ...printData, // Preserve items, earnedPoints, etc.
             date: date,
             id: newTicketId,
-            mobile: printData.mobile,
-            subTickets: newSubTickets,
-            skipMaster: printData.skipMaster
+            subTickets: newSubTickets
         });
 
         // Save New Transaction to Backend
