@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Download, LogOut, RefreshCw, Receipt, Search, Trash2, AlertTriangle, BarChart3, List } from 'lucide-react';
+import { Download, LogOut, RefreshCw, Receipt, Search, Trash2, AlertTriangle, BarChart3, List, Users } from 'lucide-react';
+
+interface User {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+    rewardPoints: number;
+    createdAt: string;
+}
 
 interface Ticket {
     _id: string;
@@ -16,13 +25,15 @@ interface Ticket {
 
 export default function AdminDashboard() {
     const [tickets, setTickets] = useState<Ticket[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [view, setView] = useState<'transactions' | 'analytics'>('transactions');
+    const [view, setView] = useState<'transactions' | 'analytics' | 'users'>('transactions');
     const navigate = useNavigate();
 
     useEffect(() => {
         fetchTickets();
+        fetchUsers();
     }, []);
 
     const fetchTickets = async () => {
@@ -36,6 +47,19 @@ export default function AdminDashboard() {
             console.error('Failed to fetch tickets', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchUsers = async () => {
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`${API_URL}/api/auth/users`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setUsers(response.data);
+        } catch (error) {
+            console.error('Failed to fetch users', error);
         }
     };
 
@@ -105,6 +129,13 @@ export default function AdminDashboard() {
         const idMatch = t.id ? t.id.toLowerCase().includes(searchTerm.toLowerCase()) : false;
         const mobileMatch = t.mobile ? t.mobile.includes(searchTerm) : false;
         return idMatch || mobileMatch;
+    });
+
+    // Filtered Users
+    const filteredUsers = users.filter(u => {
+        const nameMatch = u.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const emailMatch = u.email.toLowerCase().includes(searchTerm.toLowerCase());
+        return nameMatch || emailMatch;
     });
 
     const getAnalyticsData = () => {
@@ -339,15 +370,22 @@ export default function AdminDashboard() {
                             <BarChart3 size={18} />
                             <span>Analytics</span>
                         </button>
+                        <button
+                            onClick={() => setView('users')}
+                            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg font-bold transition-all ${view === 'users' ? 'bg-white text-blue-600 shadow-md ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            <Users size={18} />
+                            <span>Users</span>
+                        </button>
                     </div>
 
                     <div className="flex flex-wrap gap-3 items-center justify-center md:justify-end w-full md:w-auto">
-                        {view === 'transactions' && (
+                        {(view === 'transactions' || view === 'users') && (
                             <div className="relative w-full md:w-72">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                 <input
                                     type="text"
-                                    placeholder="Search ID or Mobile..."
+                                    placeholder={view === 'transactions' ? "Search ID or Mobile..." : "Search Name or Email..."}
                                     className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none font-medium"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -464,8 +502,9 @@ export default function AdminDashboard() {
                                 </tbody>
                             </table>
                         </div>
-                    ) : (
+                    ) : view === 'analytics' ? (
                         <div className="overflow-x-auto">
+                            {/* Analytics content ... */}
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50/50 border-b border-slate-200">
@@ -496,6 +535,52 @@ export default function AdminDashboard() {
                                             </td>
                                         </tr>
                                     ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-50/50 border-b border-slate-200">
+                                        <th className="px-6 py-5 text-xs font-extrabold text-slate-500 uppercase tracking-wider">User Name</th>
+                                        <th className="px-6 py-5 text-xs font-extrabold text-slate-500 uppercase tracking-wider">Email Address</th>
+                                        <th className="px-6 py-5 text-xs font-extrabold text-slate-500 uppercase tracking-wider text-center">Role</th>
+                                        <th className="px-6 py-5 text-xs font-extrabold text-slate-500 uppercase tracking-wider text-center">Points</th>
+                                        <th className="px-6 py-5 text-xs font-extrabold text-slate-500 uppercase tracking-wider text-right">Joined</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {filteredUsers.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium italic">
+                                                No users found matching your search.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        filteredUsers.map((user) => (
+                                            <tr key={user._id} className="hover:bg-slate-50/80 transition-colors group">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="bg-blue-50 p-2 rounded-lg text-blue-500 group-hover:bg-white transition-all shadow-sm">
+                                                            <Users size={16} />
+                                                        </div>
+                                                        <span className="font-bold text-slate-900">{user.name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 font-medium text-slate-600">{user.email}</td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest ${user.role === 'admin' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                                                        {user.role}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center font-black text-indigo-600">{user.rewardPoints}</td>
+                                                <td className="px-6 py-4 text-right text-slate-400 text-xs font-bold">
+                                                    {new Date(user.createdAt).toLocaleDateString()}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
                         </div>
