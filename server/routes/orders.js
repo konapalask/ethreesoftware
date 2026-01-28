@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const MockModel = require('../utils/mockDB');
-const Order = new MockModel('Order');
+const Order = require('../models/Order');
 const Stripe = require('stripe');
 const { auth, admin } = require('../middleware/auth');
 
@@ -16,7 +15,7 @@ const stripe = process.env.STRIPE_SECRET_KEY ? Stripe(process.env.STRIPE_SECRET_
  */
 router.get('/all', auth, admin, async (req, res) => {
     try {
-        const orders = await Order.find();
+        const orders = await Order.find().sort({ createdAt: -1 });
         res.json(orders);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -32,7 +31,7 @@ router.get('/all', auth, admin, async (req, res) => {
  */
 router.get('/', auth, async (req, res) => {
     try {
-        const orders = await Order.find({ user: req.user.id });
+        const orders = await Order.find({ user: req.user.id }).sort({ createdAt: -1 });
         res.json(orders);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -64,7 +63,8 @@ router.post('/checkout', auth, async (req, res) => {
             orderStatus: 'placed'
         });
 
-        res.json({ id: 'mock_session_id', url: `http://localhost:5174/success?orderId=${order._id}` });
+        // Mocking Stripe checkout URL
+        res.json({ id: 'mock_session_id', url: `https://example.com/checkout?orderId=${order._id}` });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

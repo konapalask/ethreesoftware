@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const MockModel = require('../utils/mockDB');
-const Booking = new MockModel('Booking');
+const Booking = require('../models/Booking');
 const { auth, admin } = require('../middleware/auth');
 
 /**
@@ -13,7 +12,7 @@ const { auth, admin } = require('../middleware/auth');
  */
 router.get('/', auth, admin, async (req, res) => {
     try {
-        const bookings = await Booking.find();
+        const bookings = await Booking.find().sort({ createdAt: -1 });
         res.json(bookings);
     } catch (err) {
         res.status(500).json({ message: err.message });
