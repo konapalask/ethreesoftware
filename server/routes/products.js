@@ -19,7 +19,7 @@ const seedInitialData = async () => {
 
         // CLEANUP: Remove ALL legacy data to ensure a fresh start
         await Product.deleteMany({});
-        console.log('Cleaned up all existing product data.');
+        console.log('FINAL SYNC: Updating all ride prices and names to user specification...');
 
         const initialRides = [
             { id: '1', name: 'Balloon Shooting', price: 100, description: 'Aim and fire to win prizes.', image: 'baloon shooting/IMG_8435.jpg', category: 'play' },
