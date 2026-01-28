@@ -16,6 +16,12 @@ let isSeeded = false;
 const seedInitialData = async () => {
     try {
         console.log('Synchronizing ride data with MongoDB...');
+
+        // CLEANUP: Remove stale data that doesn't have an 'id' (legacy schema artifacts)
+        // This ensures old "Kids Train" or other renamed/stale items are removed.
+        await Product.deleteMany({ id: { $exists: false } });
+        console.log('Cleaned up legacy data without IDs.');
+
         const initialRides = [
             { id: '1', name: 'Balloon Shooting', price: 100, description: 'Aim and fire to win prizes.', image: 'baloon shooting/IMG_8435.jpg', category: 'play' },
             { id: '2', name: 'Bouncy', price: 100, description: 'Safe inflatable fun for kids.', image: 'bouncy/WhatsApp_Image_2025-06-14_at_4.02.45_PM.jpeg', category: 'play' },

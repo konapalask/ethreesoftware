@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema({
+    id: { type: String, required: true, unique: true }, // Added explicit ID for syncing
     name: { type: String, required: true },
     category: { type: String, required: true }, // 'food', 'play', 'event'
     price: { type: Number, required: true },
