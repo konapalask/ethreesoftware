@@ -130,6 +130,8 @@ router.post('/:id/verify', async (req, res) => {
     }
 });
 
+const { auth, admin } = require('../middleware/auth');
+
 /**
  * @swagger
  * /api/tickets/clear-all:
@@ -137,7 +139,7 @@ router.post('/:id/verify', async (req, res) => {
  *     summary: Delete all tickets (Clear History)
  *     tags: [Tickets]
  */
-router.delete('/clear-all', async (req, res) => {
+router.delete('/clear-all', auth, admin, async (req, res) => {
     try {
         await Ticket.deleteMany({});
         res.json({ message: 'All tickets cleared successfully' });
