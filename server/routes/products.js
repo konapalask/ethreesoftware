@@ -93,6 +93,22 @@ router.post('/', auth, admin, async (req, res) => {
 
 /**
  * @swagger
+ * /api/products/force-reset:
+ *   get:
+ *     summary: Manually force database re-seeding (Nuclear Option)
+ *     tags: [Products]
+ */
+router.get('/force-reset', async (req, res) => {
+    try {
+        await seedInitialData();
+        res.json({ message: 'Database forcefully reset to defaults.' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+/**
+ * @swagger
  * /api/products/:id:
  *   put:
  *     summary: Update a product (Admin only)
