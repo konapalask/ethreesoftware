@@ -176,45 +176,53 @@ export default function POS() {
         // Removed unused state setters
 
         const loggedUser = JSON.parse(localStorage.getItem('user') || '{}');
-        const ticketData = {
-            id: ticketId,
-            amount: totalWithTax,
-            date: date,
-            items: cart,
-            status: 'valid',
-            mobile: mobileNumber,
-            paymentMode: (paymentMode || 'cash') as 'cash' | 'upi',
-            createdBy: loggedUser.name || 'Unknown',
-            createdAt: new Date().toISOString()
-        };
 
-        // Handle Combo Tickets (Generate 5 separate tickets for each Combo)
-        const ticketsToSave = [ticketData];
+        // Handle Split Saving: Regular Items vs Combo Items
+        const ticketsToSave: any[] = [];
         const subTickets: any[] = [];
         let onlyCombos = true;
 
-        cart.forEach(item => {
-            if (item.id === '21') { // Combo Ticket ID
-                for (let i = 0; i < item.quantity * 5; i++) {
-                    const subId = `${ticketId}-C${i + 1}`;
-                    const subTicket = {
-                        id: subId,
-                        amount: 100, // Explicit value per ride
-                        date: date,
-                        items: [{ ...item, quantity: 1, name: 'ANY RIDE', price: 100 }], // Rename for coupon
-                        status: 'valid',
-                        mobile: mobileNumber,
-                        paymentMode: (paymentMode || 'cash') as 'cash' | 'upi',
-                        createdBy: loggedUser.name || 'Unknown',
-                        createdAt: new Date().toISOString(),
-                        isCoupon: true,
-                        parentId: ticketId
-                    };
-                    ticketsToSave.push(subTicket);
-                    subTickets.push(subTicket);
-                }
-            } else {
-                onlyCombos = false;
+        const regularItems = cart.filter(item => item.id !== '21');
+        const comboItems = cart.filter(item => item.id === '21');
+
+        // 1. Prepare Regular Ticket (if any regular items exist)
+        if (regularItems.length > 0) {
+            onlyCombos = false;
+            const regularTotal = regularItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const regularTicket = {
+                id: ticketId,
+                amount: regularTotal,
+                date: date,
+                items: regularItems,
+                status: 'valid',
+                mobile: mobileNumber,
+                paymentMode: (paymentMode || 'cash') as 'cash' | 'upi',
+                createdBy: loggedUser.name || 'Unknown',
+                createdAt: new Date().toISOString()
+            };
+            ticketsToSave.push(regularTicket);
+        }
+
+        // 2. Prepare Combo Sub-Tickets
+        comboItems.forEach(item => {
+            // Generate 5 tickets for each combo quantity
+            for (let i = 0; i < item.quantity * 5; i++) {
+                const subId = `${ticketId}-C${subTickets.length + 1}`;
+                const subTicket = {
+                    id: subId,
+                    amount: 100, // Fixed price per sub-ticket
+                    date: date,
+                    items: [{ ...item, quantity: 1, name: 'ANY RIDE', price: 100 }],
+                    status: 'valid',
+                    mobile: mobileNumber,
+                    paymentMode: (paymentMode || 'cash') as 'cash' | 'upi',
+                    createdBy: loggedUser.name || 'Unknown',
+                    createdAt: new Date().toISOString(),
+                    isCoupon: true,
+                    parentId: ticketId
+                };
+                ticketsToSave.push(subTicket);
+                subTickets.push(subTicket);
             }
         });
 
