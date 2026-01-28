@@ -32,14 +32,14 @@ export const rides: Ride[] = [
     {
         id: '4',
         name: 'Bumping Cars Double',
-        price: 150,
+        price: 200,
         description: 'Classic favorite for two players.',
         image: 'bumping cars double/Bumper_Cars_9944_14762891777.jpg'
     },
     {
         id: '5',
         name: 'Bumping Cars Single',
-        price: 100,
+        price: 150,
         description: 'Fun-filled solo driving experience.',
         image: 'bumping cars single/IMG_8417.jpg'
     },
@@ -87,7 +87,7 @@ export const rides: Ride[] = [
     },
     {
         id: '12',
-        name: 'Kids Train',
+        name: 'Track Train',
         price: 100,
         description: 'A delightful journey for the little ones.',
         image: 'train ticket/IMG_8410.jpg'
@@ -102,14 +102,14 @@ export const rides: Ride[] = [
     {
         id: '14',
         name: '360 Cycle',
-        price: 150,
+        price: 100,
         description: 'Thrilling 360-degree cycling experience.',
         image: '360 cycle/360-degree-cycle-500x500.webp'
     },
     {
         id: '15',
         name: 'Basket Ball',
-        price: 100,
+        price: 50,
         description: 'Shoot hoops and win scores.',
         image: 'basket ball/images.jpg'
     },
@@ -144,7 +144,7 @@ export const rides: Ride[] = [
     {
         id: '20',
         name: 'Combo Child (5 Rides)',
-        price: 400,
+        price: 500,
         description: '5 Rides for Children.',
         image: 'combo child/E4LOGO.jpeg'
     },
@@ -152,7 +152,7 @@ export const rides: Ride[] = [
         id: '21',
         name: 'Ticket Summary Pas (5 Rides)',
         price: 500,
-        description: 'Special Pass: Any 5 rides of your choice!',
+        description: '',
         image: 'E4LOGO.jpeg'
     }
 ];

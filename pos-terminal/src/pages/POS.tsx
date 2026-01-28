@@ -231,9 +231,10 @@ export default function POS() {
 
         // 2. Prepare Individual Ride Tickets
         cart.forEach(item => {
-            if (item.id === '21') {
-                // Special Case: Combo Ride (ID 21) prints 5 tickets per quantity
-                for (let i = 0; i < item.quantity * 5; i++) {
+            const isCombo = ['19', '20', '21'].includes(item.id);
+            if (isCombo) {
+                // Special Case: Combo Ride prints 6 tickets per quantity (updated from 5)
+                for (let i = 0; i < item.quantity * 6; i++) {
                     const subId = `${ticketId}-C${subTickets.length + 1}`;
                     const subTicket = {
                         id: subId,
