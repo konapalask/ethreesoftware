@@ -73,18 +73,7 @@ export default function AdminDashboard() {
         }
     };
 
-    const fetchStats = async () => {
-        try {
-            const API_URL = import.meta.env.VITE_API_URL || '';
-            const [ordersRes, bookingsRes] = await Promise.all([
-                axios.get(`${API_URL}/api/orders`),
-                axios.get(`${API_URL}/api/bookings`)
-            ]);
-            // Process ordersRes.data and bookingsRes.data as needed
-        } catch (error) {
-            console.error('Failed to fetch stats', error);
-        }
-    };
+
 
     const fetchUsers = async () => {
         try {
@@ -583,7 +572,7 @@ export default function AdminDashboard() {
                                         Go Back
                                     </button>
                                     <button
-                                        onClick={handleClearAll}
+                                        onClick={clearAllData}
                                         disabled={clearConfirmText !== 'DELETE ALL'}
                                         className={`flex-[1.5] py-4 font-black rounded-2xl transition-all shadow-lg border-b-4 ${clearConfirmText === 'DELETE ALL'
                                             ? 'bg-rose-600 text-white hover:bg-rose-700 border-rose-800 shadow-rose-500/40 active:border-b-0 active:translate-y-1'
