@@ -29,7 +29,7 @@
     {
         "id": "4",
         "name": "Bumping Cars Double",
-        "price": 150,
+        "price": 200,
         "description": "Classic favorite for two players.",
         "image": "bumping cars double/Bumper_Cars_9944_14762891777.jpg",
         "_id": "id_4",
@@ -38,7 +38,7 @@
     {
         "id": "5",
         "name": "Bumping Cars Single",
-        "price": 100,
+        "price": 150,
         "description": "Fun-filled solo driving experience.",
         "image": "bumping cars single/IMG_8417.jpg",
         "_id": "id_5",
@@ -100,7 +100,7 @@
     },
     {
         "id": "12",
-        "name": "Kids Train",
+        "name": "Track Train",
         "price": 100,
         "description": "A delightful journey for the little ones.",
         "image": "train ticket/IMG_8410.jpg",
@@ -119,7 +119,7 @@
     {
         "id": "14",
         "name": "360 Cycle",
-        "price": 150,
+        "price": 100,
         "description": "Thrilling 360-degree cycling experience.",
         "image": "360 cycle/360-degree-cycle-500x500.webp",
         "_id": "id_14",
@@ -128,7 +128,7 @@
     {
         "id": "15",
         "name": "Basket Ball",
-        "price": 100,
+        "price": 50,
         "description": "Shoot hoops and win scores.",
         "image": "basket ball/images.jpg",
         "_id": "id_15",
@@ -173,7 +173,7 @@
     {
         "id": "20",
         "name": "Combo Child (5 Rides)",
-        "price": 400,
+        "price": 500,
         "description": "5 Rides for Children.",
         "image": "combo child/E4LOGO.jpeg",
         "_id": "id_20",
@@ -183,7 +183,7 @@
         "id": "21",
         "name": "Ticket Summary Pas (5 Rides)",
         "price": 500,
-        "description": "Special Pass: Any 5 rides of your choice!",
+        "description": "",
         "image": "E4LOGO.jpeg",
         "_id": "id_21",
         "createdAt": "2026-01-28T16:00:00.000Z"
