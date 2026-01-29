@@ -19,11 +19,13 @@ function PrivateRoute({ children, role }: { children: React.ReactNode, role?: st
   }
 
   if (role && user.role !== role) {
-    // If user is admin but tries to go to POS - maybe allow? or separate?
-    // If user is pos but tries to go to Admin - definitely block.
-    if (role === 'admin' && user.role !== 'admin') {
-      return <Navigate to="/pos" replace />;
-    }
+    if (user.role === 'admin') return <Navigate to="/admin" replace />;
+    return <Navigate to="/pos" replace />;
+  }
+
+  // Special Case: Block Admin from POS
+  if (!role && user.role === 'admin' && window.location.hash.includes('/pos')) {
+    return <Navigate to="/admin" replace />;
   }
 
   return children;
@@ -111,7 +113,11 @@ function App() {
             </PrivateRoute>
           }
         />
-        <Route path="/" element={<Navigate to="/pos" replace />} />
+        <Route path="/" element={
+          localStorage.getItem('token')
+            ? (JSON.parse(localStorage.getItem('user') || '{}').role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/pos" replace />)
+            : <Navigate to="/login" replace />
+        } />
       </Routes>
     </Router>
   );

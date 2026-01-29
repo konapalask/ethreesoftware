@@ -55,6 +55,13 @@ export default function POS() {
     const ticketRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
 
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user.role === 'admin') {
+            navigate('/admin');
+        }
+    }, [navigate]);
+
     // Fetch Rides from API
     useEffect(() => {
         const fetchRides = async () => {
@@ -232,7 +239,7 @@ export default function POS() {
             status: 'valid',
             mobile: mobileNumber,
             paymentMode: (paymentMode || 'cash') as 'cash' | 'upi',
-            createdBy: loggedUser.name || 'Unknown',
+            createdBy: loggedUser.name || loggedUser.email || 'Cashier',
             createdAt: new Date().toISOString()
         };
         ticketsToSave.push(masterTicket);
@@ -444,7 +451,7 @@ export default function POS() {
                                 />
                             </div>
                             <div>
-                                <h1 className="text-lg md:text-xl font-black tracking-tight text-white leading-none flex items-center gap-1.5">EFOUR <span className="text-amber-400">POS</span> <span className="text-xs text-amber-400 font-bold bg-amber-900 px-1 rounded ring-1 ring-amber-500/50">v4.0</span> <span className="text-[9px] bg-indigo-500 text-white px-1 rounded-full animate-pulse tracking-tighter shadow-[0_0_10px_rgba(99,102,241,0.5)]">PREMIUM v4.0</span></h1>
+                                <h1 className="text-lg md:text-xl font-black tracking-tight text-white leading-none flex items-center gap-1.5">EFOUR <span className="text-amber-400">POS</span> <span className="text-xs text-amber-400 font-bold bg-amber-900 px-1 rounded ring-1 ring-amber-500/50">v4.1</span> <span className="text-[9px] bg-sky-500 text-white px-1 rounded-full animate-pulse tracking-tighter shadow-[0_0_10px_rgba(14,165,233,0.5)]">SECURE v4.1</span></h1>
                                 <p className="text-[10px] md:text-xs text-slate-400 font-medium tracking-wide hidden sm:block">ELURU ENTERTAINMENT NETWORK</p>
                             </div>
 
