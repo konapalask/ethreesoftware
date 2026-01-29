@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import type { Ride } from '../data/rides';
-import { Trash2, Printer, ShoppingCart } from 'lucide-react';
+import { Trash2, Printer, ShoppingCart, Banknote, Smartphone } from 'lucide-react';
 
 interface CartItem extends Ride {
     quantity: number;
@@ -131,76 +131,87 @@ export const Cart = memo(function Cart({
                         </div>
 
                         {/* Payment Mode */}
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Payment Mode</label>
-                            <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-3">
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Payment Mode Selection</label>
+                            <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => onPaymentModeChange('cash')}
-                                    className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all ${paymentMode === 'cash'
-                                        ? 'border-emerald-600 bg-emerald-50 text-emerald-700 font-bold shadow-sm'
-                                        : 'border-slate-100 bg-white text-slate-400 hover:border-slate-200'
+                                    className={`group flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border-2 transition-all duration-300 relative overflow-hidden ${paymentMode === 'cash'
+                                        ? 'border-emerald-500 bg-emerald-500/5 text-emerald-700 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
+                                        : 'border-slate-100 bg-white text-slate-400 hover:border-slate-200 hover:bg-slate-50'
                                         }`}
                                 >
-                                    <div className={`w-3 h-3 rounded-full border-2 flex items-center justify-center ${paymentMode === 'cash' ? 'border-emerald-600' : 'border-slate-200'}`}>
-                                        {paymentMode === 'cash' && <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full" />}
+                                    <div className={`p-2 rounded-full transition-transform duration-300 group-hover:scale-110 ${paymentMode === 'cash' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' : 'bg-slate-100'}`}>
+                                        <Banknote size={20} />
                                     </div>
-                                    <span className="text-xs">CASH</span>
+                                    <span className="text-[11px] font-black tracking-widest uppercase">CASH</span>
+                                    {paymentMode === 'cash' && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
                                 </button>
                                 <button
                                     onClick={() => onPaymentModeChange('upi')}
-                                    className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all ${paymentMode === 'upi'
-                                        ? 'border-blue-600 bg-blue-50 text-blue-700 font-bold shadow-sm'
-                                        : 'border-slate-100 bg-white text-slate-400 hover:border-slate-200'
+                                    className={`group flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border-2 transition-all duration-300 relative overflow-hidden ${paymentMode === 'upi'
+                                        ? 'border-indigo-600 bg-indigo-600/5 text-indigo-700 shadow-[0_0_20px_rgba(79,70,229,0.1)]'
+                                        : 'border-slate-100 bg-white text-slate-400 hover:border-slate-200 hover:bg-slate-50'
                                         }`}
                                 >
-                                    <div className={`w-3 h-3 rounded-full border-2 flex items-center justify-center ${paymentMode === 'upi' ? 'border-blue-600' : 'border-slate-200'}`}>
-                                        {paymentMode === 'upi' && <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />}
+                                    <div className={`p-2 rounded-full transition-transform duration-300 group-hover:scale-110 ${paymentMode === 'upi' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'bg-slate-100'}`}>
+                                        <Smartphone size={20} />
                                     </div>
-                                    <span className="text-xs">UPI</span>
+                                    <span className="text-[11px] font-black tracking-widest uppercase">UPI / QR</span>
+                                    {paymentMode === 'upi' && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />}
                                 </button>
                             </div>
                         </div>
                     </div>
                 )}
 
-                <div className="space-y-3 pb-4 border-b border-dashed border-slate-200">
-                    <div className="flex justify-between text-slate-500 text-sm">
+                <div className="space-y-3 pb-4 border-b border-dashed border-slate-200 px-1">
+                    <div className="flex justify-between text-slate-500 text-sm font-medium">
                         <span>Subtotal</span>
                         <span>₹{total}</span>
                     </div>
-                    <div className="flex justify-between text-slate-500 text-sm">
-                        <span>Taxes</span>
-                        <span className="text-emerald-500 font-medium">Included</span>
+                    <div className="flex justify-between text-slate-500 text-sm font-medium">
+                        <span>Taxes (GST 0%)</span>
+                        <span className="text-emerald-500 font-bold tracking-tight">INCLUDED</span>
                     </div>
                 </div>
 
-                <div className="flex justify-between items-end">
-                    <div className="text-slate-500 text-xs font-medium uppercase tracking-wider mb-1">Total Payable</div>
-                    <div className="text-3xl font-black text-slate-900 tracking-tight">₹{total}</div>
+                <div className="bg-slate-900 rounded-2xl p-5 text-white flex justify-between items-center shadow-2xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-amber-400/20 transition-all duration-500" />
+                    <div className="relative z-10">
+                        <div className="text-amber-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Total Payable</div>
+                        <div className="text-4xl font-black tracking-tighter">₹{total}</div>
+                    </div>
+                    <div className="relative z-10 text-right">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Instant Print</div>
+                        <div className="text-emerald-400 text-xs font-black uppercase tracking-widest mt-1 italic">Ready</div>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-5 gap-3 pt-2">
                     <button
                         onClick={onClear}
                         disabled={items.length === 0}
-                        className="col-span-1 flex items-center justify-center p-3 rounded-xl border-2 border-slate-100 text-slate-400 hover:text-rose-500 hover:border-rose-100 hover:bg-rose-50 disabled:opacity-50 transition-all duration-200"
+                        className="col-span-1 flex items-center justify-center p-3.5 rounded-2xl border-2 border-slate-100 text-slate-400 hover:text-rose-500 hover:border-rose-100 hover:bg-rose-50 disabled:opacity-30 transition-all duration-300 active:scale-95"
                         title="Clear Cart"
                     >
-                        <Trash2 size={20} />
+                        <Trash2 size={22} />
                     </button>
                     {paymentMode && (
                         <button
                             onClick={onPrint}
                             disabled={items.length === 0}
-                            className="col-span-4 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-3 shadow-xl shadow-slate-900/20 hover:shadow-2xl hover:shadow-slate-900/30 transition-all active:scale-[0.98] group animate-in slide-in-from-bottom-2 duration-300"
+                            className="group col-span-4 bg-slate-900 hover:bg-black text-white font-black py-4 px-6 rounded-2xl flex items-center justify-center gap-3 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] transition-all duration-300 active:scale-[0.98] animate-in slide-in-from-bottom-2"
                         >
-                            <Printer size={20} className="group-hover:text-amber-400 transition-colors" />
-                            <span className="group-hover:text-amber-50 transition-colors uppercase tracking-tight">Print Ticket</span>
+                            <div className="bg-amber-400 p-1.5 rounded-lg text-slate-900 shadow-lg group-hover:scale-110 transition-transform">
+                                <Printer size={20} />
+                            </div>
+                            <span className="uppercase tracking-[0.1em] text-sm">Print Final Ticket</span>
                         </button>
                     )}
                     {!paymentMode && items.length > 0 && (
-                        <div className="col-span-4 bg-slate-50 text-slate-400 font-bold py-3.5 px-4 rounded-xl flex items-center justify-center border-2 border-dashed border-slate-200 text-xs uppercase tracking-widest italic">
-                            Select mode to print
+                        <div className="col-span-4 bg-slate-100 text-slate-400 font-black py-4 px-6 rounded-2xl flex items-center justify-center border-2 border-dashed border-slate-200 text-[10px] uppercase tracking-[0.2em] italic">
+                            Select mode above
                         </div>
                     )}
                 </div>
