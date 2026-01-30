@@ -73,6 +73,8 @@ const authRoutes = require('../server/routes/auth');
 const productRoutes = require('../server/routes/products');
 const orderRoutes = require('../server/routes/orders');
 const bookingRoutes = require('../server/routes/bookings');
+const loyaltyRoutes = require('../server/routes/loyalty');
+const ticketRoutes = require('../server/routes/tickets');
 
 // Flexible routing: Handle both /api/auth and /auth
 // Vercel sometimes strips the /api prefix before passing it to the function
@@ -87,6 +89,12 @@ app.use('/orders', orderRoutes);
 
 app.use('/api/bookings', bookingRoutes);
 app.use('/bookings', bookingRoutes);
+
+app.use('/api/loyalty', loyaltyRoutes);
+app.use('/loyalty', loyaltyRoutes);
+
+app.use('/api/tickets', ticketRoutes);
+app.use('/tickets', ticketRoutes);
 
 // Root Route
 app.get('/api', (req, res) => {
