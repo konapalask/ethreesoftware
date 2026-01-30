@@ -64,27 +64,39 @@ router.post('/register', async (req, res) => {
  */
 router.post('/login', async (req, res) => {
     try {
-        console.log('Login attempt for:', req.body.email);
-        console.log('JWT_SECRET present:', !!process.env.JWT_SECRET);
-
         const { email, password } = req.body;
-        const user = await User.findOne({ email });
+        console.log(`[AUTH] Login attempt: ${email}`);
+
+        // Check if DB is connected
+        if (mongoose.connection.readyState !== 1) {
+            console.error('[AUTH] Database not connected. State:', mongoose.connection.readyState);
+            return res.status(500).json({ message: 'Database connection error' });
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase() });
         if (!user) {
-            console.log(`Login failed: User not found for ${email}`);
+            console.log(`[AUTH] User not found: ${email}`);
             return res.status(400).json({ message: 'Invalid credentials' });
         }
+
+        console.log(`[AUTH] User found: ${user.email}, Role: ${user.role}`);
 
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
-            console.log(`Login failed: Password mismatch for ${email}`);
+            console.log(`[AUTH] Password mismatch for: ${email}`);
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
+        if (!JWT_SECRET || JWT_SECRET === 'your_jwt_secret_key_here') {
+            console.warn('[AUTH] WARNING: JWT_SECRET is not properly configured.');
+        }
+
         const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
+        console.log(`[AUTH] Login successful: ${email}`);
         res.json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
     } catch (err) {
-        console.error('Login Error:', err);
-        res.status(500).json({ message: err.message, stack: process.env.NODE_ENV === 'development' ? err.stack : undefined });
+        console.error('[AUTH] Login Exception:', err);
+        res.status(500).json({ message: 'Internal server error', error: err.message });
     }
 });
 
